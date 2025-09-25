@@ -1,20 +1,21 @@
 package carnegietechnologies.gallery_saver
 
 import android.Manifest
-import android.app.Activity
+import android.content.Context
 import android.content.pm.PackageManager
 import androidx.core.app.ActivityCompat
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugin.common.PluginRegistry
+import io.flutter.embedding.engine.plugins.FlutterPlugin
 import kotlinx.coroutines.*
 
 enum class MediaType { image, video }
 /**
  * Class holding implementation of saving images and videos
  */
-class GallerySaver internal constructor(private val activity: Activity) :
-    PluginRegistry.RequestPermissionsResultListener {
+class GallerySaver : FlutterPlugin {
+
+    private var context: Context? = null
 
     private var pendingResult: MethodChannel.Result? = null
     private var mediaType: MediaType? = null
@@ -47,7 +48,7 @@ class GallerySaver internal constructor(private val activity: Activity) :
             saveMediaFile()
         } else {
             ActivityCompat.requestPermissions(
-                activity,
+                context!! as android.app.Activity,
                 arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
                 REQUEST_EXTERNAL_IMAGE_STORAGE_PERMISSION
             )
@@ -57,7 +58,7 @@ class GallerySaver internal constructor(private val activity: Activity) :
     private fun isWritePermissionGranted(): Boolean {
         return PackageManager.PERMISSION_GRANTED ==
                 ActivityCompat.checkSelfPermission(
-                    activity, Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    context!!, Manifest.permission.WRITE_EXTERNAL_STORAGE
                 )
     }
 
@@ -65,9 +66,9 @@ class GallerySaver internal constructor(private val activity: Activity) :
         uiScope.launch {
             val success = async(Dispatchers.IO) {
                 if (mediaType == MediaType.video) {
-                    FileUtils.insertVideo(activity.contentResolver, filePath, albumName, toDcim)
+                    FileUtils.insertVideo(context!!.contentResolver, filePath, albumName, toDcim)
                 } else {
-                    FileUtils.insertImage(activity.contentResolver, filePath, albumName, toDcim)
+                    FileUtils.insertImage(context!!.contentResolver, filePath, albumName, toDcim)
                 }
             }
             success.await()
@@ -85,7 +86,7 @@ class GallerySaver internal constructor(private val activity: Activity) :
         pendingResult = null
     }
 
-    override fun onRequestPermissionsResult(
+    fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<String>, grantResults: IntArray
     ): Boolean {
         if (requestCode == REQUEST_EXTERNAL_IMAGE_STORAGE_PERMISSION) {
@@ -99,6 +100,14 @@ class GallerySaver internal constructor(private val activity: Activity) :
             return true
         }
         return false
+    }
+
+    override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        context = binding.applicationContext
+    }
+
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        context = null
     }
 
     companion object {
