@@ -26,15 +26,6 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 android {
-    namespace "com.example.gallery_saver"
-    compileSdkVersion 34
-    defaultConfig {
-        minSdkVersion 21
-        targetSdkVersion 34
-    }
-}
-
-{
     namespace "carnegietechnologies.gallery_saver"
     compileSdkVersion 34
     defaultConfig {
